@@ -218,6 +218,7 @@
         <div class="field">
           <label for="grup">Grup</label>
           <select id="grup">
+            <option value="">Selecciona...</option>
             <option value="DAW1A">DAW1A</option>
             <option value="DAW1B">DAW1B</option>
             <option value="ASIX1">ASIX1</option>
@@ -366,7 +367,30 @@
     </div>
 
     <script>
-      const respostes = [];
+      const respostes = [
+        {
+          id: 1,
+          grup: "DAW1A",
+          puntuacio: 4,
+          comentari: "Activitat clara i ben organitzada.",
+          data: "2026-06-01T09:00:00.000Z",
+        },
+        {
+          id: 2,
+          grup: "DAW1B",
+          puntuacio: 5,
+          comentari: "M'ha agradat molt la dinamica de classe.",
+          data: "2026-06-02T10:30:00.000Z",
+        },
+        {
+          id: 3,
+          grup: "ASIX1",
+          puntuacio: 3,
+          comentari: "Correcte, pero faltaria una mica mes de temps.",
+          data: "2026-06-03T08:15:00.000Z",
+        },
+      ];
+      let properId = respostes.length + 1;
       const grup = document.getElementById("grup");
       const puntuacio = document.getElementById("puntuacio");
       const comentari = document.getElementById("comentari");
@@ -401,104 +425,179 @@
         return Number.isInteger(num) && num >= 1 && num <= 5;
       }
 
-      function formatData(date) {
-        return date.toLocaleString("ca-ES", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+    function calcularEstadistiques(dades) {
+      let total = dades.length;
+      let suma = 0;
+      let positives = 0;
+
+      for (let i = 0; i < dades.length; i++) {
+        suma += dades[i].puntuacio;
+
+        if (dades[i].puntuacio >= 4) {
+          positives++;
+        }
       }
 
-      function actualitzarPanel() {
-        const filtre = filtroGrup.value;
-        const filtrades = respostes.filter(
-          (item) => filtre === "TOTS" || item.grup === filtre,
-        );
-        const totalRespostes = filtrades.length;
-        const suma = filtrades.reduce((acc, item) => acc + item.puntuacio, 0);
-        const positivesCount = filtrades.filter(
-          (item) => item.puntuacio >= 4,
-        ).length;
-        total.textContent = totalRespostes;
-        mitjana.textContent = totalRespostes
-          ? (suma / totalRespostes).toFixed(2)
-          : "0.00";
-        positives.textContent = totalRespostes
-          ? Math.round((positivesCount / totalRespostes) * 100) + "%"
-          : "0%";
+      let mitjana = 0;
+      let positivesPercent = 0;
 
-        const countsPerScore = [0, 0, 0, 0, 0];
-        filtrades.forEach((item) => {
-          countsPerScore[item.puntuacio - 1] += 1;
-        });
-        countsPerScore.forEach((count, index) => {
-          counts[index].textContent = count;
-          bars[index].style.width = totalRespostes
-            ? `${Math.round((count / totalRespostes) * 100)}%`
-            : "0%";
-        });
-
-        const segmentColors = [
-          "#ff7a7a",
-          "#ffb86f",
-          "#ffe670",
-          "#7cd98a",
-          "#4b8bff",
-        ];
-        const segments = countsPerScore.map((count, index) => ({
-          value: totalRespostes ? (count / totalRespostes) * 100 : 0,
-          color: segmentColors[index],
-        }));
-        const gradient = segments.reduce((result, segment, idx) => {
-          const start = segments
-            .slice(0, idx)
-            .reduce((sum, item) => sum + item.value, 0);
-          const end = start + segment.value;
-          return `${result}${segment.color} ${start.toFixed(1)}% ${end.toFixed(1)}%, `;
-        }, "");
-        pieDist.style.background = totalRespostes
-          ? `conic-gradient(${gradient.slice(0, -2)})`
-          : "#dfe7f3";
-        pieDistLabel.textContent = totalRespostes
-          ? `Distribució de puntuacions`
-          : "Sense dades";
-        pieDistLegend.innerHTML = countsPerScore
-          .map((count, index) => {
-            const percent = totalRespostes
-              ? `${((count / totalRespostes) * 100).toFixed(1)}%`
-              : "0%";
-            const labels = ["1/5", "2/5", "3/5", "4/5", "5/5"];
-            const colors = [
-              "#ff7a7a",
-              "#ffb86f",
-              "#ffe670",
-              "#7cd98a",
-              "#4b8bff",
-            ];
-            return `
-              <li><span><span class="pie-swatch" style="background:${colors[index]}"></span>${labels[index]}</span><span>${percent}</span></li>
-            `;
-          })
-          .join("");
-
-        const positiveValue = totalRespostes
-          ? (positivesCount / totalRespostes) * 100
-          : 0;
-        piePositive.style.background = totalRespostes
-          ? `conic-gradient(#4b8bff 0% ${positiveValue}%, #dfe7f3 ${positiveValue}% 100%)`
-          : "#dfe7f3";
-        piePosLabel.textContent = totalRespostes
-          ? `${Math.round(positiveValue)}% positives (4-5)`
-          : "0% positives";
-        piePosLegend.innerHTML = `
-          <li><span><span class="pie-swatch" style="background:#4b8bff"></span>Positives (4-5)</span><span>${Math.round(positiveValue)}%</span></li>
-          <li><span><span class="pie-swatch" style="background:#dfe7f3"></span>No positives (1-3)</span><span>${totalRespostes ? Math.round(100 - positiveValue) : 0}%</span></li>
-        `;
-
-        renderRespostes(filtrades);
+      if (total > 0) {
+        mitjana = suma / total;
+        positivesPercent = (positives / total) * 100;
       }
+
+      return {
+        total: total,
+        mitjana: mitjana, 
+        positivesPercent: Math.round(positivesPercent) // 👈 ARREGLADO
+      };
+    }
+
+      function obtenirRespostesFiltrades(grupFiltre) {
+        let resultat = [];
+
+      for (let i = 0; i < respostes.length; i++) {
+        if (grupFiltre === "TOTS") {
+          resultat.push(respostes[i]);
+        } else {
+          if (respostes[i].grup === grupFiltre) {
+            resultat.push(respostes[i]);
+          }
+        }
+      }
+
+  return resultat;
+}
+
+ function actualitzarPanel() {
+  const filtre = filtroGrup.value;
+  const filtrades = obtenirRespostesFiltrades(filtre);
+
+  const estadistiques = calcularEstadistiques(filtrades);
+
+  // KPIs
+  total.textContent = estadistiques.total;
+  mitjana.textContent = estadistiques.mitjana.toFixed(2);
+  positives.textContent = estadistiques.positivesPercent + "%";
+
+  // contar notas 1-5
+  const countsPerScore = [0, 0, 0, 0, 0];
+
+  for (let i = 0; i < filtrades.length; i++) {
+    const nota = filtrades[i].puntuacio;
+    countsPerScore[nota - 1]++;
+  }
+
+  // actualizar barras
+  let maxCount = 0;
+
+  for (let i = 0; i < countsPerScore.length; i++) {
+    if (countsPerScore[i] > maxCount) {
+      maxCount = countsPerScore[i];
+    }
+  }
+
+  for (let i = 0; i < countsPerScore.length; i++) {
+    counts[i].textContent = countsPerScore[i];
+
+    if (maxCount > 0) {
+      bars[i].style.width =
+        (countsPerScore[i] / maxCount) * 100 + "%";
+    } else {
+      bars[i].style.width = "0%";
+    }
+  }
+
+
+  const totalRespostes = filtrades.length;
+
+  const segmentColors = [
+    "#ff7a7a",
+    "#ffb86f",
+    "#ffe670",
+    "#7cd98a",
+    "#4b8bff",
+  ];
+
+  let segments = [];
+  for (let i = 0; i < countsPerScore.length; i++) {
+    segments.push({
+      value: totalRespostes > 0 ? (countsPerScore[i] / totalRespostes) * 100 : 0,
+      color: segmentColors[i],
+    });
+  }
+
+  let gradient = "";
+  let acumulado = 0;
+
+  for (let i = 0; i < segments.length; i++) {
+    const start = acumulado;
+    const end = start + segments[i].value;
+
+    gradient += `${segments[i].color} ${start}% ${end}%, `;
+
+    acumulado = end;
+  }
+
+  gradient = gradient.slice(0, -2);
+
+  pieDist.style.background =
+    totalRespostes > 0
+      ? `conic-gradient(${gradient})`
+      : "#dfe7f3";
+
+  pieDistLabel.textContent =
+    totalRespostes > 0
+      ? "Distribució de puntuacions"
+      : "Sense dades";
+
+  pieDistLegend.innerHTML = countsPerScore
+    .map((count, index) => {
+      const percent = totalRespostes
+        ? ((count / totalRespostes) * 100).toFixed(1) + "%"
+        : "0%";
+
+      const labels = ["1/5", "2/5", "3/5", "4/5", "5/5"];
+
+      return `
+        <li>
+          <span>
+            <span class="pie-swatch" style="background:${segmentColors[index]}"></span>
+            ${labels[index]}
+          </span>
+          <span>${percent}</span>
+        </li>
+      `;
+    })
+    .join("");
+
+
+  let positiveValue = 0;
+
+  if (totalRespostes > 0) {
+    positiveValue =
+      (countsPerScore[3] + countsPerScore[4]) / totalRespostes * 100;
+  }
+
+  piePositive.style.background =
+    totalRespostes > 0
+      ? `conic-gradient(#4b8bff 0% ${positiveValue}%, #dfe7f3 ${positiveValue}% 100%)`
+      : "#dfe7f3";
+
+  piePosLabel.textContent =
+    totalRespostes > 0
+      ? Math.round(positiveValue) + "% positives (4-5)"
+      : "0% positives";
+
+  piePosLegend.innerHTML = `
+    <li><span><span class="pie-swatch" style="background:#4b8bff"></span>Positives (4-5)</span><span>${Math.round(positiveValue)}%</span></li>
+    <li><span><span class="pie-swatch" style="background:#dfe7f3"></span>No positives (1-3)</span><span>${
+      totalRespostes ? Math.round(100 - positiveValue) : 0
+    }%</span></li>
+  `;
+
+  renderRespostes(filtrades);
+}
 
       function renderRespostes(data) {
         if (!data.length) {
@@ -509,14 +608,14 @@
 
         const ordenades = data
           .slice()
-          .sort((a, b) => b.timestamp - a.timestamp);
+          .sort((a, b) => new Date(b.data) - new Date(a.data));
         respostesDiv.innerHTML = ordenades
           .map(
             (item) => `
         <div class="response-card">
           <strong>${item.grup} · ${item.puntuacio}/5</strong>
           <p>${item.comentari || "Sense comentari"}</p>
-          <small>${item.dataVisible}</small>
+          <small>${item.data}</small>
         </div>
       `,
           )
@@ -528,22 +627,28 @@
         const puntuacioValue = puntuacio.value;
         const comentariValue = comentari.value.trim();
 
+        if (!grupValue) {
+          error.textContent = "Has de seleccionar un grup.";
+          return;
+        }
+
         if (!validarPuntuacio(puntuacioValue)) {
           error.textContent = "La puntuació ha d’estar entre 1 i 5.";
           return;
         }
 
         error.textContent = "";
-        const now = new Date();
         const novaResposta = {
+          id: properId,
           grup: grupValue,
           puntuacio: Number(puntuacioValue),
           comentari: comentariValue,
-          timestamp: now.getTime(),
-          dataVisible: formatData(now),
+          data: new Date().toISOString(),
         };
 
         respostes.push(novaResposta);
+        properId += 1;
+        grup.value = "";
         puntuacio.value = "";
         comentari.value = "";
         actualitzarPanel();
