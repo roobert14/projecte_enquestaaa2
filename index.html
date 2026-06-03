@@ -366,296 +366,184 @@
       </section>
     </div>
 
-    <script>
-      const respostes = [
-        {
-          id: 1,
-          grup: "DAW1A",
-          puntuacio: 4,
-          comentari: "Activitat clara i ben organitzada.",
-          data: "2026-06-01T09:00:00.000Z",
-        },
-        {
-          id: 2,
-          grup: "DAW1B",
-          puntuacio: 5,
-          comentari: "M'ha agradat molt la dinamica de classe.",
-          data: "2026-06-02T10:30:00.000Z",
-        },
-        {
-          id: 3,
-          grup: "ASIX1",
-          puntuacio: 3,
-          comentari: "Correcte, pero faltaria una mica mes de temps.",
-          data: "2026-06-03T08:15:00.000Z",
-        },
-      ];
-      let properId = respostes.length + 1;
-      const grup = document.getElementById("grup");
-      const puntuacio = document.getElementById("puntuacio");
-      const comentari = document.getElementById("comentari");
-      const error = document.getElementById("error");
-      const total = document.getElementById("total");
-      const mitjana = document.getElementById("mitjana");
-      const positives = document.getElementById("positives");
-      const filtroGrup = document.getElementById("filtroGrup");
-      const respostesDiv = document.getElementById("respostes");
-      const bars = [
-        document.getElementById("bar1"),
-        document.getElementById("bar2"),
-        document.getElementById("bar3"),
-        document.getElementById("bar4"),
-        document.getElementById("bar5"),
-      ];
-      const counts = [
-        document.getElementById("count1"),
-        document.getElementById("count2"),
-        document.getElementById("count3"),
-        document.getElementById("count4"),
-        document.getElementById("count5"),
-      ];
-      const pieDist = document.getElementById("pieDist");
-      const piePositive = document.getElementById("piePositive");
-      const pieDistLabel = document.getElementById("pieDistLabel");
-      const piePosLabel = document.getElementById("piePosLabel");
-      const pieDistLegend = document.getElementById("pieDistLegend");
-      const piePosLegend = document.getElementById("piePosLegend");
-      function validarPuntuacio(value) {
-        const num = Number(value);
-        return Number.isInteger(num) && num >= 1 && num <= 5;
-      }
+    
 
-    function calcularEstadistiques(dades) {
-      let total = dades.length;
-      let suma = 0;
-      let positives = 0;
+    <script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-      for (let i = 0; i < dades.length; i++) {
-        suma += dades[i].puntuacio;
+const supabase = createClient(
+  "https://qerntygrepzltefqwsre.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlcm50eWdyZXB6bHRlZnF3c3JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDM3NDYsImV4cCI6MjA5NjA3OTc0Nn0.O6ZIfEDDHiTk1Drj-9Y8MsLqN7Qur7blw2MyspB03Vg"
+);
 
-        if (dades[i].puntuacio >= 4) {
-          positives++;
-        }
-      }
+let respostes = [];
 
-      let mitjana = 0;
-      let positivesPercent = 0;
+const grup = document.getElementById("grup");
+const puntuacio = document.getElementById("puntuacio");
+const comentari = document.getElementById("comentari");
+const error = document.getElementById("error");
 
-      if (total > 0) {
-        mitjana = suma / total;
-        positivesPercent = (positives / total) * 100;
-      }
+const total = document.getElementById("total");
+const mitjana = document.getElementById("mitjana");
+const positives = document.getElementById("positives");
 
-      return {
-        total: total,
-        mitjana: mitjana, 
-        positivesPercent: Math.round(positivesPercent) // 👈 ARREGLADO
-      };
+const filtroGrup = document.getElementById("filtroGrup");
+const respostesDiv = document.getElementById("respostes");
+
+const bars = [
+  document.getElementById("bar1"),
+  document.getElementById("bar2"),
+  document.getElementById("bar3"),
+  document.getElementById("bar4"),
+  document.getElementById("bar5"),
+];
+
+const counts = [
+  document.getElementById("count1"),
+  document.getElementById("count2"),
+  document.getElementById("count3"),
+  document.getElementById("count4"),
+  document.getElementById("count5"),
+];
+
+function validarPuntuacio(value) {
+  const num = Number(value);
+  return Number.isInteger(num) && num >= 1 && num <= 5;
+}
+
+function calcularEstadistiques(dades) {
+  let total = dades.length;
+  let suma = 0;
+  let positives = 0;
+
+  for (let i = 0; i < dades.length; i++) {
+    suma += dades[i].puntuacio;
+    if (dades[i].puntuacio >= 4) positives++;
+  }
+
+  let mitjana = total ? suma / total : 0;
+  let positivesPercent = total ? (positives / total) * 100 : 0;
+
+  return {
+    total,
+    mitjana,
+    positivesPercent: Math.round(positivesPercent),
+  };
+}
+
+function obtenirRespostesFiltrades(grupFiltre) {
+  let resultat = [];
+
+  for (let i = 0; i < respostes.length; i++) {
+    if (grupFiltre === "TOTS" || respostes[i].grup === grupFiltre) {
+      resultat.push(respostes[i]);
     }
-
-      function obtenirRespostesFiltrades(grupFiltre) {
-        let resultat = [];
-
-      for (let i = 0; i < respostes.length; i++) {
-        if (grupFiltre === "TOTS") {
-          resultat.push(respostes[i]);
-        } else {
-          if (respostes[i].grup === grupFiltre) {
-            resultat.push(respostes[i]);
-          }
-        }
-      }
+  }
 
   return resultat;
 }
 
- function actualitzarPanel() {
+function actualitzarPanel() {
   const filtre = filtroGrup.value;
   const filtrades = obtenirRespostesFiltrades(filtre);
-
   const estadistiques = calcularEstadistiques(filtrades);
 
-  // KPIs
   total.textContent = estadistiques.total;
   mitjana.textContent = estadistiques.mitjana.toFixed(2);
   positives.textContent = estadistiques.positivesPercent + "%";
 
-  // contar notas 1-5
   const countsPerScore = [0, 0, 0, 0, 0];
 
   for (let i = 0; i < filtrades.length; i++) {
-    const nota = filtrades[i].puntuacio;
-    countsPerScore[nota - 1]++;
+    countsPerScore[filtrades[i].puntuacio - 1]++;
   }
 
-  // actualizar barras
   let maxCount = 0;
-
   for (let i = 0; i < countsPerScore.length; i++) {
-    if (countsPerScore[i] > maxCount) {
-      maxCount = countsPerScore[i];
-    }
+    if (countsPerScore[i] > maxCount) maxCount = countsPerScore[i];
   }
 
   for (let i = 0; i < countsPerScore.length; i++) {
     counts[i].textContent = countsPerScore[i];
-
-    if (maxCount > 0) {
-      bars[i].style.width =
-        (countsPerScore[i] / maxCount) * 100 + "%";
-    } else {
-      bars[i].style.width = "0%";
-    }
+    bars[i].style.width = maxCount
+      ? (countsPerScore[i] / maxCount) * 100 + "%"
+      : "0%";
   }
-
-
-  const totalRespostes = filtrades.length;
-
-  const segmentColors = [
-    "#ff7a7a",
-    "#ffb86f",
-    "#ffe670",
-    "#7cd98a",
-    "#4b8bff",
-  ];
-
-  let segments = [];
-  for (let i = 0; i < countsPerScore.length; i++) {
-    segments.push({
-      value: totalRespostes > 0 ? (countsPerScore[i] / totalRespostes) * 100 : 0,
-      color: segmentColors[i],
-    });
-  }
-
-  let gradient = "";
-  let acumulado = 0;
-
-  for (let i = 0; i < segments.length; i++) {
-    const start = acumulado;
-    const end = start + segments[i].value;
-
-    gradient += `${segments[i].color} ${start}% ${end}%, `;
-
-    acumulado = end;
-  }
-
-  gradient = gradient.slice(0, -2);
-
-  pieDist.style.background =
-    totalRespostes > 0
-      ? `conic-gradient(${gradient})`
-      : "#dfe7f3";
-
-  pieDistLabel.textContent =
-    totalRespostes > 0
-      ? "Distribució de puntuacions"
-      : "Sense dades";
-
-  pieDistLegend.innerHTML = countsPerScore
-    .map((count, index) => {
-      const percent = totalRespostes
-        ? ((count / totalRespostes) * 100).toFixed(1) + "%"
-        : "0%";
-
-      const labels = ["1/5", "2/5", "3/5", "4/5", "5/5"];
-
-      return `
-        <li>
-          <span>
-            <span class="pie-swatch" style="background:${segmentColors[index]}"></span>
-            ${labels[index]}
-          </span>
-          <span>${percent}</span>
-        </li>
-      `;
-    })
-    .join("");
-
-
-  let positiveValue = 0;
-
-  if (totalRespostes > 0) {
-    positiveValue =
-      (countsPerScore[3] + countsPerScore[4]) / totalRespostes * 100;
-  }
-
-  piePositive.style.background =
-    totalRespostes > 0
-      ? `conic-gradient(#4b8bff 0% ${positiveValue}%, #dfe7f3 ${positiveValue}% 100%)`
-      : "#dfe7f3";
-
-  piePosLabel.textContent =
-    totalRespostes > 0
-      ? Math.round(positiveValue) + "% positives (4-5)"
-      : "0% positives";
-
-  piePosLegend.innerHTML = `
-    <li><span><span class="pie-swatch" style="background:#4b8bff"></span>Positives (4-5)</span><span>${Math.round(positiveValue)}%</span></li>
-    <li><span><span class="pie-swatch" style="background:#dfe7f3"></span>No positives (1-3)</span><span>${
-      totalRespostes ? Math.round(100 - positiveValue) : 0
-    }%</span></li>
-  `;
 
   renderRespostes(filtrades);
 }
 
-      function renderRespostes(data) {
-        if (!data.length) {
-          respostesDiv.innerHTML =
-            '<p style="color:#6a7e95; margin:0;">Encara no hi ha respostes.</p>';
-          return;
-        }
+function renderRespostes(data) {
+  if (!data.length) {
+    respostesDiv.innerHTML = "<p>Encara no hi ha respostes.</p>";
+    return;
+  }
 
-        const ordenades = data
-          .slice()
-          .sort((a, b) => new Date(b.data) - new Date(a.data));
-        respostesDiv.innerHTML = ordenades
-          .map(
-            (item) => `
-        <div class="response-card">
-          <strong>${item.grup} · ${item.puntuacio}/5</strong>
-          <p>${item.comentari || "Sense comentari"}</p>
-          <small>${item.data}</small>
-        </div>
-      `,
-          )
-          .join("");
-      }
+  const ordenades = data
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-      document.getElementById("guardar").addEventListener("click", () => {
-        const grupValue = grup.value;
-        const puntuacioValue = puntuacio.value;
-        const comentariValue = comentari.value.trim();
+  respostesDiv.innerHTML = ordenades
+    .map(
+      (item) => `
+      <div class="response-card">
+        <strong>${item.grup} · ${item.puntuacio}/5</strong>
+        <p>${item.comentari || "Sense comentari"}</p>
+        <small>${item.created_at}</small>
+      </div>
+    `
+    )
+    .join("");
+}
 
-        if (!grupValue) {
-          error.textContent = "Has de seleccionar un grup.";
-          return;
-        }
+async function guardarEnSupabase(novaResposta) {
+  const { error } = await supabase
+    .from("respostes")
+    .insert([novaResposta]);
 
-        if (!validarPuntuacio(puntuacioValue)) {
-          error.textContent = "La puntuació ha d’estar entre 1 i 5.";
-          return;
-        }
+  if (error) console.log(error);
+}
 
-        error.textContent = "";
-        const novaResposta = {
-          id: properId,
-          grup: grupValue,
-          puntuacio: Number(puntuacioValue),
-          comentari: comentariValue,
-          data: new Date().toISOString(),
-        };
+document.getElementById("guardar").addEventListener("click", async () => {
+  const grupValue = grup.value;
+  const puntuacioValue = puntuacio.value;
+  const comentariValue = comentari.value.trim();
 
-        respostes.push(novaResposta);
-        properId += 1;
-        grup.value = "";
-        puntuacio.value = "";
-        comentari.value = "";
-        actualitzarPanel();
-      });
+  if (!grupValue) return (error.textContent = "Selecciona un grup");
+  if (!validarPuntuacio(puntuacioValue))
+    return (error.textContent = "Puntuació 1-5");
 
-      filtroGrup.addEventListener("change", actualitzarPanel);
-      actualitzarPanel();
-    </script>
+  error.textContent = "";
+
+  const novaResposta = {
+    grup: grupValue,
+    puntuacio: Number(puntuacioValue),
+    comentari: comentariValue,
+  };
+
+  await guardarEnSupabase(novaResposta);
+
+  grup.value = "";
+  puntuacio.value = "";
+  comentari.value = "";
+
+  await carregarRespostes();
+});
+
+async function carregarRespostes() {
+  const { data, error } = await supabase
+    .from("respostes")
+    .select("*");
+
+  if (error) return console.log(error);
+
+  respostes = data;
+  actualitzarPanel();
+}
+
+filtroGrup.addEventListener("change", actualitzarPanel);
+
+carregarRespostes();
+</script>
   </body>
 </html>
