@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enquesta d'aula</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#eef2fb; color:#10233f; }
+    .page { max-width:960px; margin:24px auto; padding:16px; gap:20px; display:grid; }
+    .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 12px 30px rgba(16,35,63,0.12); }
+    h1, h2, h3 { margin:0 0 14px; }
+    .field { display:grid; gap:8px; margin-bottom:16px; }
+    label { font-weight:600; }
+    select, textarea, button { width:100%; border:1px solid #d3dee9; border-radius:12px; padding:12px; font-size:1rem; }
+    textarea { min-height:100px; resize:vertical; }
+    button { background:#1f5dff; color:#fff; border:none; cursor:pointer; }
+    button:hover { background:#1646c2; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+    .stat { background:#f3f7ff; border-radius:14px; padding:14px; }
+    .stat strong { display:block; font-size:1.5rem; margin-bottom:6px; }
+    .list { margin:0; padding:0; list-style:none; display:grid; gap:10px; }
+    .item { display:flex; justify-content:space-between; gap:12px; }
+    .response { background:#f9fcff; border:1px solid #d7e6f5; border-radius:14px; padding:14px; }
+    .error { color:#bf1a1a; min-height:22px; }
+    @media (max-width:640px) { .stats { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="card">
+      <h1>Formulari d'enquesta</h1>
+      <div class="field">
+        <label for="grup">Grup</label>
+        <select id="grup">
+          <option value="DAW1A">DAW1A</option>
+          <option value="DAW1B">DAW1B</option>
+          <option value="ASIX1">ASIX1</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="puntuacio">Puntuació (1-5)</label>
+        <select id="puntuacio">
+          <option value="">Selecciona...</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="comentari">Comentari (opcional)</label>
+        <textarea id="comentari" placeholder="Escriu un comentari..."></textarea>
+      </div>
+      <div class="field">
+        <button id="guardar">Guardar</button>
+      </div>
+      <div class="error" id="error"></div>
+    </section>
+
+    <section class="card">
+      <h2>Panell</h2>
+      <div class="stats">
+        <div class="stat"><strong id="total">0</strong>Respostes</div>
+        <div class="stat"><strong id="mitjana">0.00</strong>Mitjana</div>
+        <div class="stat"><strong id="positives">0%</strong>Positives</div>
+      </div>
+      <h3>Últimes respostes</h3>
+      <div id="respostes" class="list"><p style="color:#6a7e95; margin:0;">Encara no hi ha respostes.</p></div>
+    </section>
+  </div>
+
+  <script>
+    const respostes = [];
+    const grup = document.getElementById('grup');
+    const puntuacio = document.getElementById('puntuacio');
+    const comentari = document.getElementById('comentari');
+    const error = document.getElementById('error');
+    const total = document.getElementById('total');
+    const mitjana = document.getElementById('mitjana');
+    const positives = document.getElementById('positives');
+    const respostesDiv = document.getElementById('respostes');
+
+    function validarPuntuacio(value) {
+      const num = Number(value);
+      return Number.isInteger(num) && num >= 1 && num <= 5;
+    }
+
+    function formatData(date) {
+      return date.toLocaleString('ca-ES', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function actualitzarPanel() {
+      const totalRespostes = respostes.length;
+      const suma = respostes.reduce((acc, item) => acc + item.puntuacio, 0);
+      const positivesCount = respostes.filter(item => item.puntuacio >= 4).length;
+      total.textContent = totalRespostes;
+      mitjana.textContent = totalRespostes ? (suma / totalRespostes).toFixed(2) : '0.00';
+      positives.textContent = totalRespostes ? Math.round((positivesCount / totalRespostes) * 100) + '%' : '0%';
+
+      if (!totalRespostes) {
+        respostesDiv.innerHTML = '<p style="color:#6a7e95; margin:0;">Encara no hi ha respostes.</p>';
+        return;
+      }
+
+      respostesDiv.innerHTML = respostes.slice().reverse().map(item => `
+        <div class="response">
+          <strong>${item.grup} · ${item.puntuacio}/5</strong>
+          <p style="margin:8px 0 4px;">${item.comentari || 'Sense comentari'}</p>
+          <small style="color:#5b6b84;">${item.data}</small>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('guardar').addEventListener('click', () => {
+      const grupValue = grup.value;
+      const puntuacioValue = puntuacio.value;
+      const comentariValue = comentari.value.trim();
+
+      if (!validarPuntuacio(puntuacioValue)) {
+        error.textContent = 'La puntuació ha d’estar entre 1 i 5.';
+        return;
+      }
+
+      error.textContent = '';
+      const novaResposta = {
+        grup: grupValue,
+        puntuacio: Number(puntuacioValue),
+        comentari: comentariValue,
+        data: formatData(new Date())
+      };
+
+      respostes.push(novaResposta);
+      puntuacio.value = '';
+      comentari.value = '';
+      actualitzarPanel();
+    });
+
+    actualitzarPanel();
+  </script>
+</body>
+</html>
