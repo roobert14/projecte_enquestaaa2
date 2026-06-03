@@ -1,142 +1,553 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ca">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enquesta d'aula</title>
-  <style>
-    body { margin:0; font-family: Arial, sans-serif; background:#eef2fb; color:#10233f; }
-    .page { max-width:960px; margin:24px auto; padding:16px; gap:20px; display:grid; }
-    .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 12px 30px rgba(16,35,63,0.12); }
-    h1, h2, h3 { margin:0 0 14px; }
-    .field { display:grid; gap:8px; margin-bottom:16px; }
-    label { font-weight:600; }
-    select, textarea, button { width:100%; border:1px solid #d3dee9; border-radius:12px; padding:12px; font-size:1rem; }
-    textarea { min-height:100px; resize:vertical; }
-    button { background:#1f5dff; color:#fff; border:none; cursor:pointer; }
-    button:hover { background:#1646c2; }
-    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
-    .stat { background:#f3f7ff; border-radius:14px; padding:14px; }
-    .stat strong { display:block; font-size:1.5rem; margin-bottom:6px; }
-    .list { margin:0; padding:0; list-style:none; display:grid; gap:10px; }
-    .item { display:flex; justify-content:space-between; gap:12px; }
-    .response { background:#f9fcff; border:1px solid #d7e6f5; border-radius:14px; padding:14px; }
-    .error { color:#bf1a1a; min-height:22px; }
-    @media (max-width:640px) { .stats { grid-template-columns:1fr; } }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <section class="card">
-      <h1>Formulari d'enquesta</h1>
-      <div class="field">
-        <label for="grup">Grup</label>
-        <select id="grup">
-          <option value="DAW1A">DAW1A</option>
-          <option value="DAW1B">DAW1B</option>
-          <option value="ASIX1">ASIX1</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="puntuacio">Puntuació (1-5)</label>
-        <select id="puntuacio">
-          <option value="">Selecciona...</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="comentari">Comentari (opcional)</label>
-        <textarea id="comentari" placeholder="Escriu un comentari..."></textarea>
-      </div>
-      <div class="field">
-        <button id="guardar">Guardar</button>
-      </div>
-      <div class="error" id="error"></div>
-    </section>
-
-    <section class="card">
-      <h2>Panell</h2>
-      <div class="stats">
-        <div class="stat"><strong id="total">0</strong>Respostes</div>
-        <div class="stat"><strong id="mitjana">0.00</strong>Mitjana</div>
-        <div class="stat"><strong id="positives">0%</strong>Positives</div>
-      </div>
-      <h3>Últimes respostes</h3>
-      <div id="respostes" class="list"><p style="color:#6a7e95; margin:0;">Encara no hi ha respostes.</p></div>
-    </section>
-  </div>
-
-  <script>
-    const respostes = [];
-    const grup = document.getElementById('grup');
-    const puntuacio = document.getElementById('puntuacio');
-    const comentari = document.getElementById('comentari');
-    const error = document.getElementById('error');
-    const total = document.getElementById('total');
-    const mitjana = document.getElementById('mitjana');
-    const positives = document.getElementById('positives');
-    const respostesDiv = document.getElementById('respostes');
-
-    function validarPuntuacio(value) {
-      const num = Number(value);
-      return Number.isInteger(num) && num >= 1 && num <= 5;
-    }
-
-    function formatData(date) {
-      return date.toLocaleString('ca-ES', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-    }
-
-    function actualitzarPanel() {
-      const totalRespostes = respostes.length;
-      const suma = respostes.reduce((acc, item) => acc + item.puntuacio, 0);
-      const positivesCount = respostes.filter(item => item.puntuacio >= 4).length;
-      total.textContent = totalRespostes;
-      mitjana.textContent = totalRespostes ? (suma / totalRespostes).toFixed(2) : '0.00';
-      positives.textContent = totalRespostes ? Math.round((positivesCount / totalRespostes) * 100) + '%' : '0%';
-
-      if (!totalRespostes) {
-        respostesDiv.innerHTML = '<p style="color:#6a7e95; margin:0;">Encara no hi ha respostes.</p>';
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enquesta d'aula</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #eef2fb;
+        color: #10233f;
       }
-
-      respostesDiv.innerHTML = respostes.slice().reverse().map(item => `
-        <div class="response">
-          <strong>${item.grup} · ${item.puntuacio}/5</strong>
-          <p style="margin:8px 0 4px;">${item.comentari || 'Sense comentari'}</p>
-          <small style="color:#5b6b84;">${item.data}</small>
+      .container {
+        max-width: 1180px;
+        margin: 24px auto;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1.05fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 16px 40px rgba(16, 35, 63, 0.12);
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 16px;
+      }
+      .field {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      label {
+        font-weight: 600;
+      }
+      select,
+      textarea,
+      button {
+        width: 100%;
+        border: 1px solid #d3dee9;
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 1rem;
+      }
+      textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      button {
+        background: #1f5dff;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+      button:hover {
+        background: #1646c2;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+      .stat {
+        background: #f3f7ff;
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .stat strong {
+        display: block;
+        font-size: 1.6rem;
+        margin-bottom: 6px;
+      }
+      .chart {
+        display: grid;
+        gap: 12px;
+      }
+      .pie-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
+      }
+      .pie-card {
+        background: #f3f7ff;
+        border-radius: 18px;
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+      }
+      .pie {
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        margin: auto;
+        box-shadow: inset 0 0 0 8px rgba(255, 255, 255, 0.6);
+        background: #dfe7f3;
+        position: relative;
+      }
+      .pie::after {
+        content: "";
+        position: absolute;
+        inset: 24px;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .pie-label {
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+      .pie-legend {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.95rem;
+        color: #475569;
+      }
+      .pie-legend li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+      }
+      .pie-legend span:last-child {
+        font-weight: 700;
+      }
+      .pie-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+      .bar-track {
+        height: 12px;
+        border-radius: 999px;
+        background: #dfe7f3;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #1e5eff 0%, #4d8bff 100%);
+        width: 0%;
+      }
+      .response-list {
+        display: grid;
+        gap: 12px;
+      }
+      .response-card {
+        background: #f9fcff;
+        border: 1px solid #d7e6f5;
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .response-card strong {
+        display: block;
+        margin-bottom: 10px;
+      }
+      .response-card p,
+      .response-card small {
+        margin: 0;
+        color: #475569;
+      }
+      .response-card small {
+        display: block;
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+      .error {
+        color: #bf1a1a;
+        min-height: 22px;
+      }
+      .panel-header {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        margin-bottom: 20px;
+      }
+      .panel-header label {
+        margin-bottom: 4px;
+      }
+      @media (max-width: 980px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 640px) {
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <section class="card">
+        <h1>Formulari d'enquesta</h1>
+        <div class="field">
+          <label for="grup">Grup</label>
+          <select id="grup">
+            <option value="DAW1A">DAW1A</option>
+            <option value="DAW1B">DAW1B</option>
+            <option value="ASIX1">ASIX1</option>
+          </select>
         </div>
-      `).join('');
-    }
+        <div class="field">
+          <label for="puntuacio">Puntuació (1-5)</label>
+          <select id="puntuacio">
+            <option value="">Selecciona...</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="comentari">Comentari (opcional)</label>
+          <textarea
+            id="comentari"
+            placeholder="Escriu un comentari..."
+          ></textarea>
+        </div>
+        <div class="field">
+          <button id="guardar">Guardar</button>
+        </div>
+        <div class="error" id="error"></div>
+      </section>
 
-    document.getElementById('guardar').addEventListener('click', () => {
-      const grupValue = grup.value;
-      const puntuacioValue = puntuacio.value;
-      const comentariValue = comentari.value.trim();
+      <section class="card">
+        <div class="panel-header">
+          <div class="field" style="flex: 1; min-width: 200px">
+            <label for="filtroGrup">Filtrar per grup</label>
+            <select id="filtroGrup">
+              <option value="TOTS">TOTS</option>
+              <option value="DAW1A">DAW1A</option>
+              <option value="DAW1B">DAW1B</option>
+              <option value="ASIX1">ASIX1</option>
+            </select>
+          </div>
+        </div>
 
-      if (!validarPuntuacio(puntuacioValue)) {
-        error.textContent = 'La puntuació ha d’estar entre 1 i 5.';
-        return;
+        <h2>Panell d'estadístiques</h2>
+        <div class="stats-grid">
+          <div class="stat"><strong id="total">0</strong>Respostes totals</div>
+          <div class="stat"><strong id="mitjana">0.00</strong>Nota mitjana</div>
+          <div class="stat">
+            <strong id="positives">0%</strong>Positives (4-5)
+          </div>
+        </div>
+
+        <div class="chart">
+          <h3>Distribució de puntuacions</h3>
+          <div class="pie-grid">
+            <div class="pie-card">
+              <div class="pie" id="pieDist"></div>
+              <div class="pie-label" id="pieDistLabel">
+                Distribució de puntuacions
+              </div>
+              <ul class="pie-legend" id="pieDistLegend">
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #ff7a7a"></span
+                    >1/5</span
+                  ><span>0%</span>
+                </li>
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #ffb86f"></span
+                    >2/5</span
+                  ><span>0%</span>
+                </li>
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #ffe670"></span
+                    >3/5</span
+                  ><span>0%</span>
+                </li>
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #7cd98a"></span
+                    >4/5</span
+                  ><span>0%</span>
+                </li>
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #4b8bff"></span
+                    >5/5</span
+                  ><span>0%</span>
+                </li>
+              </ul>
+            </div>
+            <div class="pie-card">
+              <div class="pie" id="piePositive"></div>
+              <div class="pie-label" id="piePosLabel">Positives (4-5)</div>
+              <ul class="pie-legend" id="piePosLegend">
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #4b8bff"></span
+                    >Positives</span
+                  ><span>0%</span>
+                </li>
+                <li>
+                  <span
+                    ><span class="pie-swatch" style="background: #dfe7f3"></span
+                    >No positives</span
+                  ><span>0%</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="bar-row">
+            <span>1</span>
+            <div class="bar-track"><div class="bar-fill" id="bar1"></div></div>
+            <span id="count1">0</span>
+          </div>
+          <div class="bar-row">
+            <span>2</span>
+            <div class="bar-track"><div class="bar-fill" id="bar2"></div></div>
+            <span id="count2">0</span>
+          </div>
+          <div class="bar-row">
+            <span>3</span>
+            <div class="bar-track"><div class="bar-fill" id="bar3"></div></div>
+            <span id="count3">0</span>
+          </div>
+          <div class="bar-row">
+            <span>4</span>
+            <div class="bar-track"><div class="bar-fill" id="bar4"></div></div>
+            <span id="count4">0</span>
+          </div>
+          <div class="bar-row">
+            <span>5</span>
+            <div class="bar-track"><div class="bar-fill" id="bar5"></div></div>
+            <span id="count5">0</span>
+          </div>
+        </div>
+
+        <section style="margin-top: 24px">
+          <h3>Respostes ordenades per data</h3>
+          <div id="respostes" class="response-list">
+            <p style="color: #6a7e95; margin: 0">Encara no hi ha respostes.</p>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <script>
+      const respostes = [];
+      const grup = document.getElementById("grup");
+      const puntuacio = document.getElementById("puntuacio");
+      const comentari = document.getElementById("comentari");
+      const error = document.getElementById("error");
+      const total = document.getElementById("total");
+      const mitjana = document.getElementById("mitjana");
+      const positives = document.getElementById("positives");
+      const filtroGrup = document.getElementById("filtroGrup");
+      const respostesDiv = document.getElementById("respostes");
+      const bars = [
+        document.getElementById("bar1"),
+        document.getElementById("bar2"),
+        document.getElementById("bar3"),
+        document.getElementById("bar4"),
+        document.getElementById("bar5"),
+      ];
+      const counts = [
+        document.getElementById("count1"),
+        document.getElementById("count2"),
+        document.getElementById("count3"),
+        document.getElementById("count4"),
+        document.getElementById("count5"),
+      ];
+      const pieDist = document.getElementById("pieDist");
+      const piePositive = document.getElementById("piePositive");
+      const pieDistLabel = document.getElementById("pieDistLabel");
+      const piePosLabel = document.getElementById("piePosLabel");
+      const pieDistLegend = document.getElementById("pieDistLegend");
+      const piePosLegend = document.getElementById("piePosLegend");
+      function validarPuntuacio(value) {
+        const num = Number(value);
+        return Number.isInteger(num) && num >= 1 && num <= 5;
       }
 
-      error.textContent = '';
-      const novaResposta = {
-        grup: grupValue,
-        puntuacio: Number(puntuacioValue),
-        comentari: comentariValue,
-        data: formatData(new Date())
-      };
+      function formatData(date) {
+        return date.toLocaleString("ca-ES", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
 
-      respostes.push(novaResposta);
-      puntuacio.value = '';
-      comentari.value = '';
+      function actualitzarPanel() {
+        const filtre = filtroGrup.value;
+        const filtrades = respostes.filter(
+          (item) => filtre === "TOTS" || item.grup === filtre,
+        );
+        const totalRespostes = filtrades.length;
+        const suma = filtrades.reduce((acc, item) => acc + item.puntuacio, 0);
+        const positivesCount = filtrades.filter(
+          (item) => item.puntuacio >= 4,
+        ).length;
+        total.textContent = totalRespostes;
+        mitjana.textContent = totalRespostes
+          ? (suma / totalRespostes).toFixed(2)
+          : "0.00";
+        positives.textContent = totalRespostes
+          ? Math.round((positivesCount / totalRespostes) * 100) + "%"
+          : "0%";
+
+        const countsPerScore = [0, 0, 0, 0, 0];
+        filtrades.forEach((item) => {
+          countsPerScore[item.puntuacio - 1] += 1;
+        });
+        countsPerScore.forEach((count, index) => {
+          counts[index].textContent = count;
+          bars[index].style.width = totalRespostes
+            ? `${Math.round((count / totalRespostes) * 100)}%`
+            : "0%";
+        });
+
+        const segmentColors = [
+          "#ff7a7a",
+          "#ffb86f",
+          "#ffe670",
+          "#7cd98a",
+          "#4b8bff",
+        ];
+        const segments = countsPerScore.map((count, index) => ({
+          value: totalRespostes ? (count / totalRespostes) * 100 : 0,
+          color: segmentColors[index],
+        }));
+        const gradient = segments.reduce((result, segment, idx) => {
+          const start = segments
+            .slice(0, idx)
+            .reduce((sum, item) => sum + item.value, 0);
+          const end = start + segment.value;
+          return `${result}${segment.color} ${start.toFixed(1)}% ${end.toFixed(1)}%, `;
+        }, "");
+        pieDist.style.background = totalRespostes
+          ? `conic-gradient(${gradient.slice(0, -2)})`
+          : "#dfe7f3";
+        pieDistLabel.textContent = totalRespostes
+          ? `Distribució de puntuacions`
+          : "Sense dades";
+        pieDistLegend.innerHTML = countsPerScore
+          .map((count, index) => {
+            const percent = totalRespostes
+              ? `${((count / totalRespostes) * 100).toFixed(1)}%`
+              : "0%";
+            const labels = ["1/5", "2/5", "3/5", "4/5", "5/5"];
+            const colors = [
+              "#ff7a7a",
+              "#ffb86f",
+              "#ffe670",
+              "#7cd98a",
+              "#4b8bff",
+            ];
+            return `
+              <li><span><span class="pie-swatch" style="background:${colors[index]}"></span>${labels[index]}</span><span>${percent}</span></li>
+            `;
+          })
+          .join("");
+
+        const positiveValue = totalRespostes
+          ? (positivesCount / totalRespostes) * 100
+          : 0;
+        piePositive.style.background = totalRespostes
+          ? `conic-gradient(#4b8bff 0% ${positiveValue}%, #dfe7f3 ${positiveValue}% 100%)`
+          : "#dfe7f3";
+        piePosLabel.textContent = totalRespostes
+          ? `${Math.round(positiveValue)}% positives (4-5)`
+          : "0% positives";
+        piePosLegend.innerHTML = `
+          <li><span><span class="pie-swatch" style="background:#4b8bff"></span>Positives (4-5)</span><span>${Math.round(positiveValue)}%</span></li>
+          <li><span><span class="pie-swatch" style="background:#dfe7f3"></span>No positives (1-3)</span><span>${totalRespostes ? Math.round(100 - positiveValue) : 0}%</span></li>
+        `;
+
+        renderRespostes(filtrades);
+      }
+
+      function renderRespostes(data) {
+        if (!data.length) {
+          respostesDiv.innerHTML =
+            '<p style="color:#6a7e95; margin:0;">Encara no hi ha respostes.</p>';
+          return;
+        }
+
+        const ordenades = data
+          .slice()
+          .sort((a, b) => b.timestamp - a.timestamp);
+        respostesDiv.innerHTML = ordenades
+          .map(
+            (item) => `
+        <div class="response-card">
+          <strong>${item.grup} · ${item.puntuacio}/5</strong>
+          <p>${item.comentari || "Sense comentari"}</p>
+          <small>${item.dataVisible}</small>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      document.getElementById("guardar").addEventListener("click", () => {
+        const grupValue = grup.value;
+        const puntuacioValue = puntuacio.value;
+        const comentariValue = comentari.value.trim();
+
+        if (!validarPuntuacio(puntuacioValue)) {
+          error.textContent = "La puntuació ha d’estar entre 1 i 5.";
+          return;
+        }
+
+        error.textContent = "";
+        const now = new Date();
+        const novaResposta = {
+          grup: grupValue,
+          puntuacio: Number(puntuacioValue),
+          comentari: comentariValue,
+          timestamp: now.getTime(),
+          dataVisible: formatData(now),
+        };
+
+        respostes.push(novaResposta);
+        puntuacio.value = "";
+        comentari.value = "";
+        actualitzarPanel();
+      });
+
+      filtroGrup.addEventListener("change", actualitzarPanel);
       actualitzarPanel();
-    });
-
-    actualitzarPanel();
-  </script>
-</body>
+    </script>
+  </body>
 </html>
